@@ -10,6 +10,7 @@ import WhyAClean from './components/WhyAClean'
 import Testimonials from './components/Testimonials'
 import ServiceArea from './components/ServiceArea'
 import Contact from './components/Contact'
+import FAQ from './components/FAQ'
 import Footer from './components/Footer'
 
 function WaveDivider() {
@@ -142,6 +143,7 @@ export default function App() {
         <Testimonials />
         <ServiceArea />
         <Contact />
+        <FAQ />
         <WaveDivider />
         <Footer />
       </div>

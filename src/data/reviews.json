@@ -3,12 +3,30 @@
   "place_name": "AClean Building Solutions",
   "address": "South River, NJ 08882, USA",
   "rating": 5,
-  "total_reviews": 8,
+  "total_reviews": 10,
   "maps_url": "https://maps.google.com/?cid=6892143774555714101",
   "reviews_url": "https://maps.app.goo.gl/MaeuJpk7uLv8nYnz9",
   "write_review_url": "https://g.page/r/CTUyUC8_0KVfEAE/review",
-  "fetched_at": "2026-04-25T14:37:33.920Z",
+  "fetched_at": "2026-05-06T12:00:00.000Z",
   "reviews": [
+    {
+      "author_name": "Damian de Leon",
+      "author_url": "https://www.google.com/maps/contrib/102801438657171853513/reviews",
+      "profile_photo_url": "https://lh3.googleusercontent.com/a-/ALV-UjXONuhBzyQJEFh3IhUxBU2y2M6fNVDX6gLBg_YavtHyVV_iAwtN=s128-c0x00000000-cc-rp-mo-ba3",
+      "rating": 5,
+      "text": "AC Clean Building Solutions has been a great partner to work with. They are punctual and very friendly. They are quick to report any issues that they can not handle themselves. I can't say enough great things about their professionalism and attention to detail.",
+      "time": 1745858947,
+      "relative_time_description": "a week ago"
+    },
+    {
+      "author_name": "Kevin Chiriboga",
+      "author_url": "https://www.google.com/maps/contrib/103282356390516517175/reviews",
+      "profile_photo_url": "https://lh3.googleusercontent.com/a/ACg8ocJaW3GFEIToVq3QzMn-2lQoG2xHA9kXXY6DE0iJfAAKF7hPKQ=s128-c0x00000000-cc-rp-mo",
+      "rating": 5,
+      "text": "AC Clean Building Solutions has been great to work with. Their team is professional, reliable, and consistently delivers high-quality cleaning services. They pay attention to detail, show up on time, and take pride in their work.",
+      "time": 1745851243,
+      "relative_time_description": "a week ago"
+    },
     {
       "author_name": "Jessica Maffei",
       "author_url": "https://www.google.com/maps/contrib/111179480068457798908/reviews",
@@ -16,16 +34,16 @@
       "rating": 5,
       "text": "AClean Building Solutions delivers outstanding service from start to finish. The quality exceeded my expectations. Highly recommend!",
       "time": 1777125161,
-      "relative_time_description": "in the last week"
+      "relative_time_description": "a week ago"
     },
     {
       "author_name": "Nathany Alves",
       "author_url": "https://www.google.com/maps/contrib/102265178310886196480/reviews",
       "profile_photo_url": "https://lh3.googleusercontent.com/a/ACg8ocIyCyBjmpJAR6Rqb47yDcJV546LghQBAA4Uh2Lvt6am-NUoEw=s128-c0x00000000-cc-rp-mo",
       "rating": 5,
-      "text": "I've been using their cleaning services for over a year now, both at my home and for my business, and I honestly couldn't be happier. Their work is always impeccable, everything is done with so much attention to detail. What really stands out is their customer service. They're always available if I need to request something specific or make changes to my schedule, which makes everything so easy and stress-free. On top of that, their pricing is very fair for the quality they deliver. I highly recommend them to anyone looking for reliable, professional cleaning services!",
+      "text": "I've been using their cleaning services for over a year now, both at my home and for my business, and I honestly couldn't be happier. Their work is always impeccable, everything is done with so much attention to detail.\n\nWhat really stands out is their customer service. They're always available if I need to request something specific or make changes to my schedule, which makes everything so easy and stress-free.\n\nOn top of that, their pricing is very fair for the quality they deliver. I highly recommend them to anyone looking for reliable, professional cleaning services!",
       "time": 1777116027,
-      "relative_time_description": "in the last week"
+      "relative_time_description": "a week ago"
     },
     {
       "author_name": "Patricia Rego",
@@ -34,7 +52,7 @@
       "rating": 5,
       "text": "I had a very good experience. Great service and everything went smoothly. I would definitely recommend!",
       "time": 1777045512,
-      "relative_time_description": "in the last week"
+      "relative_time_description": "a week ago"
     },
     {
       "author_name": "Hamilton Alvarenga",
@@ -43,7 +61,7 @@
       "rating": 5,
       "text": "Excellent work. Highly recommended. Thank you guys!",
       "time": 1777033138,
-      "relative_time_description": "in the last week"
+      "relative_time_description": "2 weeks ago"
     },
     {
       "author_name": "Michelle Marques",
@@ -52,7 +70,7 @@
       "rating": 5,
       "text": "It's been an incredible experience. Their attention to detail, professionalism, and genuine care for their work truly set them apart. Everything is cleaned with excellence and consistency. I highly recommend their services to anyone looking for reliability and quality.",
       "time": 1777029245,
-      "relative_time_description": "in the last week"
+      "relative_time_description": "2 weeks ago"
     },
     {
       "author_name": "Mariana Nogueira",
@@ -61,7 +79,7 @@
       "rating": 5,
       "text": "I've never seen such an amazing company like this! What I like most is, they are very attentive.",
       "time": 1777027538,
-      "relative_time_description": "in the last week"
+      "relative_time_description": "2 weeks ago"
     },
     {
       "author_name": "Yuri Rocco Chinchow",
@@ -70,7 +88,7 @@
       "rating": 5,
       "text": "",
       "time": 1776996800,
-      "relative_time_description": "in the last week"
+      "relative_time_description": "2 weeks ago"
     }
   ]
 }

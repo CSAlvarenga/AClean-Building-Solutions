@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Fetches AClean Building Solutions reviews from the Google Places API (Legacy).
+ * Fetches AClean Building Solutions reviews from the Google Places API (v1 / New).
  * Writes results to src/data/reviews.json.
  *
  * Usage: npm run fetch-reviews
@@ -15,17 +15,10 @@ const __dirname  = dirname(fileURLToPath(import.meta.url))
 const rootDir    = resolve(__dirname, '..')
 const outputPath = resolve(rootDir, 'src/data/reviews.json')
 
-const BUSINESS_NAME   = 'AClean Building Solutions'
-const MAPS_URL        = 'https://maps.google.com/?cid=6892143774555714101'
-const REVIEWS_URL     = 'https://maps.app.goo.gl/MaeuJpk7uLv8nYnz9'
+const BUSINESS_NAME    = 'AClean Building Solutions'
+const MAPS_URL         = 'https://maps.google.com/?cid=6892143774555714101'
+const REVIEWS_URL      = 'https://maps.app.goo.gl/MaeuJpk7uLv8nYnz9'
 const WRITE_REVIEW_URL = 'https://g.page/r/CTUyUC8_0KVfEAE/review'
-
-// Strip street number — only show city, state, zip, country
-function formatAddress(full) {
-  if (!full) return ''
-  const parts = full.split(', ')
-  return parts.length > 1 ? parts.slice(1).join(', ') : full
-}
 
 function loadEnv() {
   const envPath = resolve(rootDir, '.env')
@@ -43,6 +36,19 @@ function loadEnv() {
   return env
 }
 
+function toUnixTime(publishTime) {
+  return Math.floor(new Date(publishTime).getTime() / 1000)
+}
+
+function relativeDescription(publishTime) {
+  const diffMs  = Date.now() - new Date(publishTime).getTime()
+  const days    = Math.floor(diffMs / 86400000)
+  if (days < 14)  return 'a week ago'
+  if (days < 45)  return `${Math.round(days / 7)} weeks ago`
+  if (days < 365) return `${Math.round(days / 30)} months ago`
+  return `${Math.round(days / 365)} year${Math.round(days / 365) > 1 ? 's' : ''} ago`
+}
+
 async function main() {
   const env    = loadEnv()
   const apiKey = env.GOOGLE_PLACES_API_KEY || process.env.GOOGLE_PLACES_API_KEY
@@ -54,39 +60,44 @@ async function main() {
 
   const placeId = env.GOOGLE_PLACE_ID || process.env.GOOGLE_PLACE_ID || 'ChIJmUMh9XNBsq4RNTJQLz_QpV8'
   console.log(`📍  Using Place ID: ${placeId}`)
+  console.log('📡  Fetching via Places API v1...')
 
-  console.log('📡  Fetching place details and reviews...')
-  const params = new URLSearchParams({
-    place_id: placeId,
-    fields: 'name,place_id,rating,user_ratings_total,reviews,formatted_address,url',
-    key: apiKey,
+  const fields = 'id,displayName,formattedAddress,rating,userRatingCount,reviews'
+  const res  = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
+    headers: {
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': fields,
+    },
   })
-  const res  = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?${params}`)
   const data = await res.json()
 
-  if (data.status !== 'OK') {
-    throw new Error(`Places API error: ${data.status} — ${data.error_message ?? ''}`)
+  if (data.error) {
+    throw new Error(`Places API v1 error: ${data.error.status} — ${data.error.message}`)
   }
 
-  const r = data.result
-  const reviews = (r.reviews || [])
-    .sort((a, b) => b.time - a.time)
+  // Strip street number — show city, state, zip only
+  const fullAddress = data.formattedAddress || ''
+  const addressParts = fullAddress.split(', ')
+  const address = addressParts.length > 1 ? addressParts.slice(1).join(', ') : fullAddress
+
+  const reviews = (data.reviews || [])
+    .sort((a, b) => new Date(b.publishTime) - new Date(a.publishTime))
     .map(rev => ({
-      author_name:               rev.author_name,
-      author_url:                rev.author_url || '',
-      profile_photo_url:         rev.profile_photo_url || '',
+      author_name:               rev.authorAttribution?.displayName || 'Anonymous',
+      author_url:                rev.authorAttribution?.uri || '',
+      profile_photo_url:         rev.authorAttribution?.photoUri || '',
       rating:                    rev.rating ?? 5,
-      text:                      rev.text || '',
-      time:                      rev.time,
-      relative_time_description: rev.relative_time_description || '',
+      text:                      rev.text?.text || rev.originalText?.text || '',
+      time:                      toUnixTime(rev.publishTime),
+      relative_time_description: rev.relativePublishTimeDescription || relativeDescription(rev.publishTime),
     }))
 
   const output = {
     place_id:         placeId,
-    place_name:       r.name || BUSINESS_NAME,
-    address:          formatAddress(r.formatted_address),
-    rating:           r.rating ?? 5,
-    total_reviews:    r.user_ratings_total ?? 0,
+    place_name:       data.displayName?.text || BUSINESS_NAME,
+    address,
+    rating:           data.rating ?? 5,
+    total_reviews:    data.userRatingCount ?? 0,
     maps_url:         MAPS_URL,
     reviews_url:      REVIEWS_URL,
     write_review_url: WRITE_REVIEW_URL,
@@ -96,7 +107,7 @@ async function main() {
 
   writeFileSync(outputPath, JSON.stringify(output, null, 2))
   console.log(`✅  Saved ${reviews.length} review(s) to src/data/reviews.json`)
-  console.log(`    ⭐  ${r.rating}/5 based on ${r.user_ratings_total} total reviews`)
+  console.log(`    ⭐  ${data.rating}/5 based on ${data.userRatingCount} total reviews`)
 }
 
 main().catch(err => {
