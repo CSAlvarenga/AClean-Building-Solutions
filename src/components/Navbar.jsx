@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 
-// ─── Portal credentials (change password here) ───────────────────────────────
-const PORTAL_PASSWORD = 'AClean2025!'
+const PORTAL_PASSWORD = import.meta.env.VITE_PORTAL_PASSWORD || ''
 const PORTAL_URL = 'https://invoice-generator.com/app'
 
 const navLinks = [
