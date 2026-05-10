@@ -16,7 +16,6 @@ function scrollTo(href) {
   document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' })
 }
 
-// ─── Navbar ───────────────────────────────────────────────────────────────────
 export default function Navbar({ isLoaded }) {
   const [scrolled, setScrolled]     = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -202,7 +201,7 @@ export default function Navbar({ isLoaded }) {
               <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
                 className="mt-8 text-center text-xs font-light"
                 style={{ color: 'rgba(255,255,255,0.3)' }}>
-                Commercial Cleaning &amp; Building Maintenance · NJ · NY · PA
+                Commercial Cleaning &amp; Building Maintenance &middot; NJ &middot; NY &middot; PA
               </motion.p>
             </div>
           </motion.div>
