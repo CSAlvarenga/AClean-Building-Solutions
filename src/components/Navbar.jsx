@@ -1,9 +1,7 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 
-// Read from Vite env — set these in your .env file
-const API_URL = import.meta.env.VITE_API_URL || ''
-const DASHBOARD_URL = import.meta.env.VITE_DASHBOARD_URL || ''
+const PORTAL_URL = 'https://portal.acleanbuildingsolutions.com'
 
 const navLinks = [
   { href: '#services', label: 'Services' },
@@ -18,402 +16,10 @@ function scrollTo(href) {
   document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' })
 }
 
-// Status badge colors for the My Invoices table
-const STATUS_COLOR = {
-  paid:      '#16a34a',
-  sent:      '#d97706',
-  overdue:   '#dc2626',
-  draft:     '#64748b',
-  cancelled: '#9ca3af',
-}
-
-function fmtDate(d) {
-  if (!d) return '—'
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-}
-
-function fmtAmount(n) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n || 0)
-}
-
-// ─── Shared input style ───────────────────────────────────────────────────────
-const inputStyle = (hasError = false) => ({
-  backgroundColor: hasError ? '#FEF2F2' : '#F4F7FB',
-  border: `1px solid ${hasError ? '#FCA5A5' : 'rgba(11,37,69,0.12)'}`,
-  color: '#0B2545',
-})
-
-// ─── Spinner ─────────────────────────────────────────────────────────────────
-function Spin() {
-  return (
-    <svg className="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3"
-        strokeDasharray="32" strokeLinecap="round" opacity="0.4" />
-      <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-    </svg>
-  )
-}
-
-// ─── Portal Modal ─────────────────────────────────────────────────────────────
-function PortalModal({ onClose }) {
-  const [tab, setTab] = useState('admin')
-
-  // Admin tab
-  const [email, setEmail]       = useState('')
-  const [password, setPassword] = useState('')
-  const [showPw, setShowPw]     = useState(false)
-  const [adminLoading, setAdminLoading] = useState(false)
-  const [adminError, setAdminError]     = useState('')
-
-  // My Invoices tab
-  const [lookupEmail, setLookupEmail]   = useState('')
-  const [lookupLoading, setLookupLoading] = useState(false)
-  const [lookupError, setLookupError]   = useState('')
-  const [invoices, setInvoices]         = useState(null) // null = not searched yet
-
-  const emailRef  = useRef(null)
-  const lookupRef = useRef(null)
-
-  useEffect(() => { setTimeout(() => emailRef.current?.focus(), 120) }, [])
-
-  // Reset errors and focus the relevant input when switching tabs
-  useEffect(() => {
-    setAdminError('')
-    setLookupError('')
-    if (tab === 'admin')    setTimeout(() => emailRef.current?.focus(), 80)
-    if (tab === 'invoices') setTimeout(() => lookupRef.current?.focus(), 80)
-  }, [tab])
-
-  // ── Admin submit ────────────────────────────────────────────────────────────
-  const handleAdminSubmit = async (e) => {
-    e.preventDefault()
-    if (!email || !password) return
-    setAdminLoading(true)
-    setAdminError('')
-    try {
-      const res  = await fetch(`${API_URL}/auth/login`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ email, password }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setAdminError(data.error || 'Invalid credentials. Please try again.')
-        return
-      }
-      // Store token in sessionStorage (cleared when tab closes — safer than localStorage)
-      sessionStorage.setItem('dashboard_token', data.token)
-      window.location.href = DASHBOARD_URL || '/'
-    } catch {
-      setAdminError('Connection failed. Please check your network and try again.')
-    } finally {
-      setAdminLoading(false)
-    }
-  }
-
-  // ── Invoice lookup ──────────────────────────────────────────────────────────
-  const handleLookup = async (e) => {
-    e.preventDefault()
-    if (!lookupEmail) return
-    setLookupLoading(true)
-    setLookupError('')
-    setInvoices(null)
-    try {
-      const res  = await fetch(`${API_URL}/invoices/public/lookup?email=${encodeURIComponent(lookupEmail.trim())}`)
-      const data = await res.json()
-      if (!res.ok) {
-        setLookupError(data.error || 'Failed to fetch invoices.')
-        return
-      }
-      setInvoices(Array.isArray(data) ? data : [])
-    } catch {
-      setLookupError('Connection failed. Please check your network and try again.')
-    } finally {
-      setLookupLoading(false)
-    }
-  }
-
-  return (
-    <motion.div
-      className="fixed inset-0 z-[80] flex items-center justify-center p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-      style={{ backgroundColor: 'rgba(11,37,69,0.6)', backdropFilter: 'blur(6px)' }}
-    >
-      <motion.div
-        className="w-full bg-white rounded-2xl overflow-hidden"
-        style={{ maxWidth: 400, boxShadow: '0 24px 80px rgba(11,37,69,0.2)' }}
-        initial={{ scale: 0.92, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.92, opacity: 0, y: 20 }}
-        transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* ── Header ── */}
-        <div className="px-8 pt-8 pb-5 text-center" style={{ borderBottom: '1px solid rgba(11,37,69,0.07)' }}>
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{ backgroundColor: 'rgba(23,168,168,0.1)' }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <rect x="3" y="11" width="18" height="11" rx="2" stroke="#17A8A8" strokeWidth="1.6" />
-              <path d="M7 11V7a5 5 0 0110 0v4" stroke="#17A8A8" strokeWidth="1.6" strokeLinecap="round" />
-              <circle cx="12" cy="16" r="1.5" fill="#17A8A8" />
-            </svg>
-          </div>
-          <h2 className="text-lg font-black mb-1" style={{ color: '#0B2545' }}>Client Portal</h2>
-          <p className="text-xs font-light" style={{ color: '#94A3B8' }}>AClean Building Solutions</p>
-        </div>
-
-        {/* ── Tab switcher ── */}
-        <div className="flex" style={{ borderBottom: '1px solid rgba(11,37,69,0.07)' }}>
-          {[
-            { key: 'admin',    label: 'Admin' },
-            { key: 'invoices', label: 'My Invoices' },
-          ].map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className="flex-1 py-3 text-sm font-semibold transition-colors duration-150 relative"
-              style={{ color: tab === key ? '#17A8A8' : '#94A3B8' }}
-            >
-              {label}
-              {tab === key && (
-                <motion.span
-                  layoutId="portal-tab-bar"
-                  className="absolute bottom-0 left-0 right-0 h-0.5"
-                  style={{ backgroundColor: '#17A8A8' }}
-                  transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-                />
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* ── Tab content ── */}
-        <AnimatePresence mode="wait" initial={false}>
-
-          {/* Admin tab */}
-          {tab === 'admin' && (
-            <motion.form
-              key="admin"
-              onSubmit={handleAdminSubmit}
-              initial={{ opacity: 0, x: -14 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 14 }}
-              transition={{ duration: 0.16 }}
-              className="px-8 py-6 space-y-4"
-            >
-              {/* Email */}
-              <div>
-                <label className="block text-xs font-semibold tracking-widest uppercase mb-2"
-                  style={{ color: '#64748B' }}>Email</label>
-                <input
-                  ref={emailRef}
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@example.com"
-                  required
-                  autoComplete="username"
-                  className="w-full px-4 py-3 rounded-xl text-sm font-light focus:outline-none focus:ring-2 transition-all duration-200"
-                  style={inputStyle()}
-                />
-              </div>
-
-              {/* Password */}
-              <div>
-                <label className="block text-xs font-semibold tracking-widest uppercase mb-2"
-                  style={{ color: '#64748B' }}>Password</label>
-                <div className="relative">
-                  <input
-                    type={showPw ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    required
-                    autoComplete="current-password"
-                    className="w-full px-4 py-3 pr-11 rounded-xl text-sm font-light focus:outline-none focus:ring-2 transition-all duration-200"
-                    style={inputStyle(!!adminError)}
-                  />
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    onClick={() => setShowPw((v) => !v)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1"
-                    style={{ color: '#94A3B8' }}
-                  >
-                    {showPw ? (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"
-                          stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                        <line x1="1" y1="1" x2="23" y2="23" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                      </svg>
-                    ) : (
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" stroke="currentColor" strokeWidth="1.5" />
-                        <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.5" />
-                      </svg>
-                    )}
-                  </button>
-                </div>
-                <AnimatePresence>
-                  {adminError && (
-                    <motion.p
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0 }}
-                      className="text-xs text-red-500 mt-1.5"
-                    >{adminError}</motion.p>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              <button
-                type="submit"
-                disabled={adminLoading}
-                className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide text-white transition-all duration-200 hover:brightness-110 flex items-center justify-center gap-2"
-                style={{ backgroundColor: '#17A8A8', minHeight: 48, opacity: adminLoading ? 0.85 : 1 }}
-              >
-                {adminLoading && <Spin />}
-                {adminLoading ? 'Signing in…' : 'Access Dashboard'}
-              </button>
-
-              <button type="button" onClick={onClose}
-                className="w-full py-2 text-xs font-medium transition-colors duration-200"
-                style={{ color: '#94A3B8' }}>
-                Cancel
-              </button>
-            </motion.form>
-          )}
-
-          {/* My Invoices tab */}
-          {tab === 'invoices' && (
-            <motion.div
-              key="invoices"
-              initial={{ opacity: 0, x: 14 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -14 }}
-              transition={{ duration: 0.16 }}
-              className="px-8 py-6"
-            >
-              <form onSubmit={handleLookup} className="space-y-4">
-                <div>
-                  <label className="block text-xs font-semibold tracking-widest uppercase mb-2"
-                    style={{ color: '#64748B' }}>Your Email Address</label>
-                  <input
-                    ref={lookupRef}
-                    type="email"
-                    value={lookupEmail}
-                    onChange={(e) => setLookupEmail(e.target.value)}
-                    placeholder="you@example.com"
-                    required
-                    autoComplete="email"
-                    className="w-full px-4 py-3 rounded-xl text-sm font-light focus:outline-none focus:ring-2 transition-all duration-200"
-                    style={inputStyle()}
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={lookupLoading}
-                  className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide text-white transition-all duration-200 hover:brightness-110 flex items-center justify-center gap-2"
-                  style={{ backgroundColor: '#17A8A8', minHeight: 48, opacity: lookupLoading ? 0.85 : 1 }}
-                >
-                  {lookupLoading && <Spin />}
-                  {lookupLoading ? 'Looking up…' : 'Look Up My Invoices'}
-                </button>
-              </form>
-
-              {/* Error */}
-              <AnimatePresence>
-                {lookupError && (
-                  <motion.p
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="mt-3 text-xs text-red-500 text-center"
-                  >{lookupError}</motion.p>
-                )}
-              </AnimatePresence>
-
-              {/* Results */}
-              <AnimatePresence>
-                {invoices !== null && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0 }}
-                    className="mt-4"
-                  >
-                    {invoices.length === 0 ? (
-                      <p className="text-center text-sm py-6" style={{ color: '#94A3B8' }}>
-                        No invoices found for this email.
-                      </p>
-                    ) : (
-                      <div className="overflow-hidden rounded-xl"
-                        style={{ border: '1px solid rgba(11,37,69,0.08)' }}>
-                        <table className="w-full text-xs">
-                          <thead>
-                            <tr style={{ backgroundColor: 'rgba(11,37,69,0.04)' }}>
-                              {['Invoice #', 'Date', 'Amount', 'Status'].map((h, i) => (
-                                <th key={h}
-                                  className={`px-3 py-2 font-semibold ${i >= 2 ? 'text-right' : 'text-left'}`}
-                                  style={{ color: '#64748B' }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {invoices.map((inv, i) => {
-                              const color = STATUS_COLOR[inv.status] || '#64748b'
-                              return (
-                                <tr key={inv.invoiceNumber}
-                                  style={{ borderTop: i > 0 ? '1px solid rgba(11,37,69,0.05)' : 'none' }}>
-                                  <td className="px-3 py-2.5 font-medium" style={{ color: '#0B2545' }}>
-                                    {inv.invoiceNumber}
-                                  </td>
-                                  <td className="px-3 py-2.5" style={{ color: '#64748B' }}>
-                                    {fmtDate(inv.issueDate)}
-                                  </td>
-                                  <td className="px-3 py-2.5 text-right font-medium" style={{ color: '#0B2545' }}>
-                                    {fmtAmount(inv.total)}
-                                  </td>
-                                  <td className="px-3 py-2.5 text-right">
-                                    <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold capitalize"
-                                      style={{ color, backgroundColor: color + '1a' }}>
-                                      {inv.status}
-                                    </span>
-                                  </td>
-                                </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              <button type="button" onClick={onClose}
-                className="w-full mt-5 py-2 text-xs font-medium transition-colors duration-200"
-                style={{ color: '#94A3B8' }}>
-                Close
-              </button>
-            </motion.div>
-          )}
-
-        </AnimatePresence>
-      </motion.div>
-    </motion.div>
-  )
-}
-
 // ─── Navbar ───────────────────────────────────────────────────────────────────
 export default function Navbar({ isLoaded }) {
   const [scrolled, setScrolled]     = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [portalOpen, setPortalOpen] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 50)
@@ -422,9 +28,9 @@ export default function Navbar({ isLoaded }) {
   }, [])
 
   useEffect(() => {
-    document.body.style.overflow = mobileOpen || portalOpen ? 'hidden' : ''
+    document.body.style.overflow = mobileOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
-  }, [mobileOpen, portalOpen])
+  }, [mobileOpen])
 
   const handleNav = (e, href) => {
     e.preventDefault()
@@ -479,9 +85,10 @@ export default function Navbar({ isLoaded }) {
 
             {/* Desktop CTAs */}
             <div className="hidden md:flex items-center gap-3">
-              {/* Client Portal button */}
-              <button
-                onClick={() => setPortalOpen(true)}
+              <a
+                href={PORTAL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold tracking-wide transition-all duration-200"
                 style={{ color: '#0B2545', border: '1.5px solid rgba(11,37,69,0.18)', backgroundColor: 'transparent' }}
                 onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#17A8A8'; e.currentTarget.style.color = '#17A8A8' }}
@@ -491,10 +98,9 @@ export default function Navbar({ isLoaded }) {
                   <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="1.8" />
                   <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                 </svg>
-                Client Portal
-              </button>
+                AClean Portal
+              </a>
 
-              {/* Get a Quote */}
               <a
                 href="#contact"
                 onClick={(e) => handleNav(e, '#contact')}
@@ -564,9 +170,10 @@ export default function Navbar({ isLoaded }) {
                 ))}
               </nav>
 
-              {/* Mobile: Client Portal */}
-              <motion.button
-                onClick={() => { setMobileOpen(false); setTimeout(() => setPortalOpen(true), 320) }}
+              <motion.a
+                href={PORTAL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.05 + navLinks.length * 0.07 }}
@@ -577,8 +184,8 @@ export default function Navbar({ isLoaded }) {
                   <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" strokeWidth="1.8" />
                   <path d="M7 11V7a5 5 0 0110 0v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
                 </svg>
-                Client Portal
-              </motion.button>
+                AClean Portal
+              </motion.a>
 
               <motion.a
                 href="#contact"
@@ -600,11 +207,6 @@ export default function Navbar({ isLoaded }) {
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
-
-      {/* Portal modal */}
-      <AnimatePresence>
-        {portalOpen && <PortalModal onClose={() => setPortalOpen(false)} />}
       </AnimatePresence>
     </>
   )
